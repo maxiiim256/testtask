@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MyApp</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/extjs/6.2.0/classic/theme-classic/resources/theme-classic-all.css">
+    
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/extjs/6.2.0/ext-all.js"></script>
+    <script>
+    Ext.onReady(function() {
+        Ext.application({
+            name: 'LoginApp',
+            launch: function() {
+                var loginWindow = createLoginWindow();
+                loginWindow.show();
+
+                function createLoginWindow() {
+                    return Ext.create('Ext.window.Window', {
+                        title: 'Вход',
+                        width: 300,
+                        height: 200,
+                        layout: 'fit',
+                        closable: false,
+                        resizable: false,
+                        modal: true,
+                        items: [{
+                            xtype: 'form',
+                            reference: 'loginForm',
+                            bodyPadding: 15,
+                            defaults: {
+                                xtype: 'textfield',
+                                allowBlank: false,
+                                labelWidth: 60
+                            },
+                            items: [{
+                                fieldLabel: 'Логин',
+                                name: 'username',
+                                emptyText: 'Введите логин'
+                            }, {
+                                fieldLabel: 'Пароль',
+                                name: 'password',
+                                inputType: 'password',
+                                emptyText: 'Введите пароль'
+                            }],
+                            buttons: [{
+                                text: 'Вход',
+                                formBind: true,
+                                handler: function() {
+                                    var form = this.up('form').getForm();
+                                    if (form.isValid()) {
+                                        var values = form.getValues();
+                                        
+                                        if (values.username === 'admin' && values.password === 'padmin') {
+                                            this.up('window').close();
+                                            createMainWindow();
+                                        } else {
+                                            Ext.Msg.alert('Ошибка', 'Неверный логин или пароль');
+                                        }
+                                    }
+                                }
+                            }]
+                        }]
+                    });
+                }
+
+                function createMainWindow() {
+                    var tabPanel = Ext.create('Ext.tab.Panel', {
+                        activeTab: 0,
+                        items: [{
+                            title: 'Главная',
+                            html: '<h1>Добро пожаловать!</h1><p>Выберите действие в меню.</p>',
+                            closable: false
+                        }]
+                    });
+
+                    var mainWindow = Ext.create('Ext.window.Window', {
+                        title: 'Главное окно - Администратор',
+                        width: 1000,
+                        height: 700,
+                        maximizable: true,
+                        layout: 'border',
+                        items: [{
+                            region: 'north',
+                            xtype: 'toolbar',
+                            items: [{
+                                text: 'Товары',
+                                iconCls: 'x-fa fa-box',
+                                handler: function() {
+                                    createProductsTab(tabPanel);
+                                }
+                            }, '->', {
+                                text: 'Выход',
+                                iconCls: 'x-fa fa-sign-out',
+                                handler: function() {
+                                    mainWindow.destroy();
+                                    var win = createLoginWindow();
+                                    win.show();
+                                }
+                            }]
+                        }, {
+                            region: 'center',
+                            layout: 'fit',
+                            items: [tabPanel]
+                        }]
+                    });
+                    
+                    mainWindow.show();
+                }
+
+                function createProductsTab(tabPanel) {
+                    var tabCount = tabPanel.items.length;
+                    
+                    var store = Ext.create('Ext.data.Store', {
+                        fields: [
+                            {name: 'id', type: 'int'},
+                            {name: 'name', type: 'string'},
+                            {name: 'description', type: 'string'},
+                            {name: 'price', type: 'float'},
+                            {name: 'quantity', type: 'int'}
+                        ],
+                        data: [
+                            {id: 1, name: 'Ноутбук', description: 'Игровой ноутбук SUSA', price: 999.99, quantity: 5},
+                            {id: 2, name: 'Смартфон', description: 'Смартфон 23 PRO PLUS ULTRA', price: 799.99, quantity: 0},
+                            {id: 3, name: 'Наушники', description: 'Беспроводные наушники oppel', price: 149.99, quantity: 12},
+                            {id: 4, name: 'Монитор', description: '4K монитор 27"', price: 499.99, quantity: 3},
+                            {id: 5, name: 'Клавиатура', description: 'Механическая клавиатура', price: 89.99, quantity: 0}
+                        ]
+                    });
+
+                    var grid = Ext.create('Ext.grid.Panel', {
+                        flex: 1,
+                        width: '100%',
+                        store: store,
+                        listeners: {
+                            cellclick: function(view, td, cellIndex, record) {
+                                if (cellIndex === 1) { 
+                                    showProductCard(record, grid);
+                                }
+                            }
+                        },
+                        columns: [{
+                            text: 'ID',
+                            dataIndex: 'id',
+                            width: 60
+                        }, {
+                            text: 'Наименование',
+                            dataIndex: 'name',
+                            flex: 1
+                        }, {
+                            text: 'Описание',
+                            dataIndex: 'description',
+                            flex: 2
+                        }, {
+                            text: 'Цена',
+                            dataIndex: 'price',
+                            width: 100,
+                            renderer: function(value) {
+                                return Ext.util.Format.currency(value, '$', 2);
+                            }
+                        }, {
+                            text: 'Количество',
+                            dataIndex: 'quantity',
+                            width: 100,
+                            renderer: function(value, metaData) {
+                                if (value === 0) {
+                                    metaData.style = 'background-color:#FFC0CB;';
+                                }
+                                return value;
+                            }
+                        }]
+                    });
+
+                    var filterForm = Ext.create('Ext.form.Panel', {
+                        bodyPadding: 10,
+                        layout: 'hbox',
+                        items: [{
+                            xtype: 'numberfield',
+                            fieldLabel: 'ID товара',
+                            name: 'idFilter',
+                            margin: '0 10 0 0',
+                            enableKeyEvents: true,
+                            listeners: {
+                                specialkey: function(field, e) {
+                                    if (e.getKey() === e.ENTER) {
+                                        applyFilters();
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'textfield',
+                            fieldLabel: 'Наименование',
+                            name: 'nameFilter',
+                            margin: '0 10 0 0',
+                            enableKeyEvents: true,
+                            listeners: {
+                                specialkey: function(field, e) {
+                                    if (e.getKey() === e.ENTER) {
+                                        applyFilters();
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'button',
+                            text: 'Сбросить',
+                            margin: '0 0 0 10',
+                            handler: function() {
+                                filterForm.getForm().reset();
+                                store.clearFilter();
+                            }
+                        }]
+                    });
+
+                    function applyFilters() {
+                        var values = filterForm.getForm().getValues();
+                        store.clearFilter();
+                        
+                        if (values.idFilter || values.nameFilter) {
+                            store.filterBy(function(record) {
+                                var idMatch = true;
+                                var nameMatch = true;
+                                
+                                if (values.idFilter) {
+                                    idMatch = (record.get('id') == values.idFilter);
+                                }
+                                
+                                if (values.nameFilter) {
+                                    nameMatch = record.get('name').toLowerCase()
+                                        .includes(values.nameFilter.toLowerCase());
+                                }
+                                
+                                return idMatch && nameMatch;
+                            });
+                        }
+                    }
+
+                    function showProductCard(record, grid) {
+                        var formPanel = Ext.create('Ext.form.Panel', {
+                            bodyPadding: 15,
+                            defaults: {
+                                anchor: '100%',
+                                labelWidth: 120
+                            },
+                            items: [{
+                                xtype: 'displayfield',
+                                fieldLabel: 'ID',
+                                name: 'id',
+                                value: record.get('id')
+                            }, {
+                                xtype: 'displayfield',
+                                fieldLabel: 'Наименование',
+                                name: 'name',
+                                value: record.get('name')
+                            }, {
+                                xtype: 'displayfield',
+                                fieldLabel: 'Описание',
+                                name: 'description',
+                                value: record.get('description')
+                            }, {
+                                xtype: 'numberfield',
+                                fieldLabel: 'Цена',
+                                name: 'price',
+                                value: record.get('price'),
+                                minValue: 0,
+                                decimalPrecision: 2,
+                                allowDecimals: true,
+                                allowBlank: false
+                            }, {
+                                xtype: 'numberfield',
+                                fieldLabel: 'Количество',
+                                name: 'quantity',
+                                value: record.get('quantity'),
+                                minValue: 0,
+                                allowDecimals: false,
+                                allowBlank: false
+                            }],
+                            buttons: [{
+                                text: 'Отмена',
+                                handler: function() {
+                                    this.up('window').close();
+                                }
+                            }, {
+                                text: 'Сохранить',
+                                formBind: true,
+                                handler: function() {
+                                    var form = this.up('form').getForm();
+                                    var values = form.getValues();
+                                    var originalValues = record.getData();
+                                    var changed = false;
+                                    
+                                    if (values.price != originalValues.price || 
+                                        values.quantity != originalValues.quantity) {
+                                        changed = true;
+                                    }
+                                    
+                                    if (changed) {
+                                        Ext.Msg.confirm('Сохранение', 'Данные будут изменены. Продолжить?', function(btn) {
+                                            if (btn === 'yes') {
+                                                record.set({
+                                                    price: values.price,
+                                                    quantity: values.quantity
+                                                });
+                                                record.commit();
+                                                this.up('window').close();
+                                                Ext.toast('Данные сохранены', 1000);
+                                                grid.getView().refresh();
+                                            }
+                                        }, this);
+                                    } else {
+                                        this.up('window').close();
+                                    }
+                                }
+                            }]
+                        });
+
+                        var win = Ext.create('Ext.window.Window', {
+                            title: 'Карточка товара: ' + record.get('name'),
+                            width: 400,
+                            height: 300,
+                            layout: 'fit',
+                            modal: true,
+                            items: [formPanel]
+                        });
+
+                        win.show();
+                    }
+
+                    var newTab = tabPanel.add({
+                        title: 'Товары ' + tabCount,
+                        layout: 'fit',
+                        closable: true,
+                        items: [{
+                            xtype: 'panel',
+                            layout: 'vbox',
+                            items: [filterForm, grid]
+                        }]
+                    });
+
+                    tabPanel.setActiveTab(newTab);
+                }
+            }
+        });
+    });
+    </script>
+</body>
+</html>
